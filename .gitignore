@@ -8,5 +8,6 @@ dist/
 coverage/
 .local-postgres/
 .browser-acceptance/
+.local-knowledge/
 # 求职材料包含个人信息，仅保存在本机。
 docs/1[5-8]-*.md

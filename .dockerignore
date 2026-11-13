@@ -5,6 +5,7 @@ node_modules
 .env.*
 deploy/.env.production
 .local-postgres
+.local-knowledge
 .browser-acceptance
 docs
 coverage

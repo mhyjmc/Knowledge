@@ -13,6 +13,7 @@
     "test:db": "npm run test:db -w @team-kb/server",
     "eval": "npm run eval -w @team-kb/server",
     "eval:live": "npm run eval:live -w @team-kb/server",
+    "skills:import": "node scripts/import-local-skills.mjs",
     "db:setup": "node scripts/setup-db.mjs",
     "db:up": "docker compose up -d --wait",
     "db:stop": "docker compose stop",
