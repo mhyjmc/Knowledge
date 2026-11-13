@@ -48,6 +48,10 @@ test('对话流式保存、历史恢复、失败状态与跨用户隔离（模�
     assert.equal(JSON.parse(grounded.body.trim().split('\n')[0]).sources[0].title,'测试报销制度');
     const restored=await app.inject({method:'GET',url:`/api/conversations/${id}/messages`,headers:{cookie}});
     assert.equal(restored.json().messages.at(-1).sources[0].content,'报销材料必须包含发票与审批记录。');
+    const edited=await app.inject({method:'PUT',url:'/api/documents/'+document.json().document.id,headers:{...headers,cookie},payload:{title:'新版报销制度',content:'新版制度只要求提交申请表。'}});
+    assert.equal(edited.statusCode,200);
+    const afterEdit=await app.inject({method:'GET',url:'/api/conversations/'+id+'/messages',headers:{cookie}});
+    assert.equal(afterEdit.json().messages.at(-1).sources[0].content,'报销材料必须包含发票与审批记录。');
     const noEvidence=await app.inject({method:'POST',url:`/api/conversations/${id}/messages`,headers:{...headers,cookie},payload:{content:'火星飞船',mode:'knowledge'}});
     assert.match(noEvidence.body,/资料不足/);
     const hidden = await app.inject({method:'POST',url:'/api/documents/search',headers:{...headers,cookie:other},payload:{query:'报销材料'}});

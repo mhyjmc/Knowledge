@@ -6,6 +6,20 @@ type Project = { name: string; stage: string; capabilities: { name: string; stat
 const project = ref<Project | null>(null);
 const state = ref<'loading' | 'ready' | 'error'>('loading');
 const errorMessage = ref('');
+const loggedIn = ref(false);
+const currentSection = ref('overview');
+const navigation = [
+  {id:'overview',label:'工作台'},
+  {id:'account',label:'账号'},
+  {id:'documents',label:'知识文档'},
+  {id:'chat',label:'智能问答'},
+  {id:'tasks',label:'任务助手'},
+];
+function navigate(id:string){
+  const target=id==='overview'?'overview':loggedIn.value?id:'account';
+  currentSection.value=target;
+  document.getElementById(target)?.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
+}
 
 async function connect() {
   state.value = 'loading';
@@ -26,38 +40,30 @@ onMounted(connect);
 
 <template>
   <div class="workspace">
-    <aside class="sidebar">
-      <div class="brand"><span class="logo">知</span>团队知识库助手</div>
-      <p class="sidebar-label">工作空间</p>
-      <div class="nav active">项目概览 <span>01</span></div>
-      <div class="nav">知识文档 <small>登录后可用</small></div>
-      <div class="nav">智能问答 <small>登录后可用</small></div>
-      <div class="nav">任务助手 <small>登录后可用</small></div>
-      <div class="sidebar-foot">从前端到 AI 应用开发<br /><strong>每一步，都有记录。</strong></div>
+    <aside class="sidebar" aria-label="工作区导航">
+      <div class="brand"><span class="logo" aria-hidden="true">知</span><span>团队知识库<small>资料与行动工作台</small></span></div>
+      <nav class="primary-nav" aria-label="主要功能">
+        <button v-for="item in navigation" :key="item.id" type="button" :class="['nav',{active:currentSection===item.id}]" :aria-current="currentSection===item.id?'location':undefined" @click="navigate(item.id)"><span>{{item.label}}</span><span class="nav-mark" aria-hidden="true">{{ item.id==='overview'?'◇':item.id==='account'?'○':item.id==='documents'?'▤':item.id==='chat'?'◎':'✓' }}</span></button>
+      </nav>
+      <div class="sidebar-foot"><span class="sidebar-pulse" aria-hidden="true"></span>{{ loggedIn?'已进入个人工作区':'登录后使用资料与问答' }}</div>
     </aside>
-    <main>
-      <header><span>工作空间 / 项目概览</span><span class="version">v0.2 · 开发中</span></header>
-      <section class="hero">
-        <p class="eyebrow">让团队知识，随时可用</p>
-        <h1>把散落的知识，<br />变成工作的答案。</h1>
-        <p class="intro">集中管理团队文档，找到有出处的答案，并逐步让助手完成实际任务。</p>
-        <div class="hero-tag">当前阶段：{{ project?.stage || '正在读取进度…' }}</div>
+    <main id="overview">
+      <header class="topbar"><span>工作区 / 工作台</span><span class="version">{{ loggedIn?'个人资料空间':'访客视图' }}</span></header>
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy"><p class="eyebrow">资料、答案与待办</p><h1 id="hero-title">从一份资料，<br />找到有出处的答案。</h1><p class="intro">导入文档，核对引用，再决定下一步要做的事。文档问答可以查看引用原文。</p><button class="hero-action" type="button" @click="navigate('documents')">{{ loggedIn?'查看我的文档':'登录后开始使用' }}</button></div>
+        <div class="hero-route" aria-label="使用流程"><span>导入资料</span><i aria-hidden="true"></i><span>查看出处</span><i aria-hidden="true"></i><span>确认待办</span></div>
       </section>
-      <section class="connection card" aria-live="polite">
-        <div><p class="eyebrow">服务连接</p><h2>{{ state === 'ready' ? '前后端已连接' : state === 'loading' ? '正在连接后端…' : '连接需要检查' }}</h2><p>{{ state === 'ready' ? '页面已成功获取 Node.js 后端返回的项目数据。' : errorMessage || '正在读取项目状态，请稍候。' }}</p></div>
-        <button :disabled="state === 'loading'" @click="connect">{{ state === 'loading' ? '连接中…' : '重新检查连接' }} <span>↗</span></button>
+      <section class="connection" aria-live="polite">
+        <div class="connection-indicator" :class="state" aria-hidden="true"></div><div><strong>{{ state === 'ready' ? '服务已连接' : state === 'loading' ? '正在连接服务' : '服务连接失败' }}</strong><p>{{ state === 'ready' ? '可以开始管理文档和对话。' : errorMessage || '正在读取项目状态。' }}</p></div>
+        <button class="quiet-button" :disabled="state === 'loading'" @click="connect">重新检查</button>
       </section>
-      <AuthPanel />
+      <AuthPanel @auth-change="loggedIn=$event" />
       <section class="roadmap">
-        <div class="section-title"><h2>一步一步，构建完整应用</h2><span>开发路线</span></div>
-        <div v-if="project" class="steps">
-          <article v-for="(item, index) in project.capabilities" :key="item.name" class="card step">
-            <span class="step-number">0{{ index + 1 }}</span><h3>{{ item.name }}</h3><span :class="['badge', { done: item.status === '已实现' }]">{{ item.status }}</span>
-          </article>
-        </div>
+        <div class="section-title"><h2>当前能力</h2><span>{{project?.stage || '正在读取进度'}}</span></div>
+        <ul v-if="project" class="capabilities"><li v-for="item in project.capabilities" :key="item.name"><span>{{item.name}}</span><span :class="['badge',{done:item.status==='已实现'}]">{{item.status}}</span></li></ul>
         <p v-else class="empty">连接后端后，将显示最新的功能进度。</p>
       </section>
-      <footer>团队知识库助手 · 文档检索与引用问答</footer>
+      <footer>团队知识库助手 · 资料归你管理，行动由你确认</footer>
     </main>
   </div>
 </template>

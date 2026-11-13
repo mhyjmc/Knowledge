@@ -87,3 +87,43 @@ test('删除文档需要登录和所有权，删除后片段不再被检索（�
     await app.close();
   }
 });
+
+test('编辑本人长文档后重建分段与检索，拒绝越权修改（真实数据库）', async () => {
+  const pool=createDatabase();assert.ok(pool);
+  const app=createApp(pool),users:string[]=[];
+  const headers={'x-requested-with':'team-kb'};
+  async function login(){
+    const email='edit-'+randomUUID()+'@example.com',password=randomUUID();
+    const registered=await app.inject({method:'POST',url:'/api/auth/register',headers,payload:{name:'编辑测试',email,password}});
+    assert.equal(registered.statusCode,201);users.push(registered.json().user.id);
+    const logged=await app.inject({method:'POST',url:'/api/auth/login',headers,payload:{email,password}});
+    assert.equal(logged.statusCode,200);
+    return {id:registered.json().user.id as string,cookie:(logged.headers['set-cookie'] as string).split(';')[0]};
+  }
+  try{
+    await migrate(pool);
+    const owner=await login(),other=await login();
+    const original='oldtokenxyz '+'甲'.repeat(1600);
+    const created=await app.inject({method:'POST',url:'/api/documents',headers:{...headers,cookie:owner.cookie},payload:{title:'原始标题',content:original}});
+    assert.equal(created.statusCode,201);
+    const id:string=created.json().document.id,url='/api/documents/'+id;
+    const oldChunks=(await pool.query<{id:string}>('SELECT id FROM document_chunks WHERE document_id=$1',[id])).rows.map(row=>row.id);
+    assert.equal((await app.inject({method:'GET',url,headers})).statusCode,401);
+    assert.equal((await app.inject({method:'GET',url,headers:{cookie:other.cookie}})).statusCode,404);
+    assert.equal((await app.inject({method:'GET',url:'/api/documents/invalid',headers:{cookie:owner.cookie}})).statusCode,400);
+    const read=await app.inject({method:'GET',url,headers:{cookie:owner.cookie}});
+    assert.equal(read.statusCode,200);assert.equal(read.json().document.content,original);
+    assert.equal((await app.inject({method:'PUT',url,headers,payload:{title:'新标题',content:'newtokenabc'}})).statusCode,401);
+    assert.equal((await app.inject({method:'PUT',url,headers:{cookie:owner.cookie},payload:{title:'新标题',content:'newtokenabc'}})).statusCode,403);
+    assert.equal((await app.inject({method:'PUT',url,headers:{...headers,cookie:other.cookie},payload:{title:'越权',content:'newtokenabc'}})).statusCode,404);
+    assert.equal((await app.inject({method:'PUT',url,headers:{...headers,cookie:owner.cookie},payload:{title:' ',content:'newtokenabc'}})).statusCode,400);
+    const updatedContent='newtokenabc '+'乙'.repeat(1700);
+    const updated=await app.inject({method:'PUT',url,headers:{...headers,cookie:owner.cookie},payload:{title:'新标题',content:updatedContent}});
+    assert.equal(updated.statusCode,200);assert.equal(updated.json().document.id,id);
+    const after=await app.inject({method:'GET',url,headers:{cookie:owner.cookie}});
+    assert.equal(after.json().document.title,'新标题');assert.equal(after.json().document.content,updatedContent);
+    assert.deepEqual(await retrieve(pool,owner.id,'oldtokenxyz'),[]);
+    assert.equal((await retrieve(pool,owner.id,'newtokenabc'))[0]?.title,'新标题');
+    assert.equal((await pool.query('SELECT id FROM document_chunks WHERE id=ANY($1::uuid[])',[oldChunks])).rowCount,0);
+  }finally{await pool.query('DELETE FROM users WHERE id=ANY($1::uuid[])',[users]);await app.close();}
+});

@@ -27,22 +27,22 @@ onMounted(()=>perform(load));
 </script>
 <template>
   <section class="task-panel">
-    <div class="section-title"><h2>任务助手</h2><span>创建待办</span></div>
-    <p>描述一项待办，助手整理草稿；只有你确认后才保存到“我的待办”。</p>
-    <form @submit.prevent="propose"><label>待办需求<textarea v-model="instruction" maxlength="2000" rows="3" :disabled="busy" placeholder="例如：整理报销材料，准备发票和审批记录" required /></label><button :disabled="busy || !instruction.trim()">{{busy?'正在处理…':'生成待办草稿'}}</button><button type="button" :disabled="busy" @click="perform(load)">刷新任务记录</button></form>
-    <p role="status">{{message}}</p>
-    <h3>我的待办</h3><p v-if="!tasks.length">暂无待办，确认草稿后会出现在这里。</p>
-    <article v-for="task in tasks" :key="task.id"><strong>{{task.title}}</strong><p>{{task.description}}</p></article>
-    <h3>执行记录（最近 50 条）</h3><p v-if="!runs.length">暂无执行记录。</p>
-    <article v-for="run in runs" :key="run.id">
+    <div class="section-title"><h2>任务助手</h2><span>先确认，再创建</span></div>
+    <p class="task-intro">描述一项待办，助手先整理草稿；只有你确认后才保存。</p>
+    <form class="task-form" @submit.prevent="propose"><label>待办需求<textarea v-model="instruction" maxlength="2000" rows="3" :disabled="busy" placeholder="例如：整理报销材料，准备发票和审批记录" required /></label><div class="task-actions"><button :disabled="busy || !instruction.trim()">{{busy?'正在处理…':'生成待办草稿'}}</button><button class="quiet-button" type="button" :disabled="busy" @click="perform(load)">刷新记录</button></div></form>
+    <p v-if="message" class="task-message" role="status">{{message}}</p>
+    <div class="task-columns"><div><h3>我的待办 <small>{{tasks.length}}</small></h3><p v-if="!tasks.length" class="empty-state">暂无待办。确认草稿后会出现在这里。</p>
+    <article v-for="task in tasks" :key="task.id" class="task-item"><strong>{{task.title}}</strong><p>{{task.description}}</p></article></div>
+    <div><h3>执行记录 <small>最近 50 条</small></h3><p v-if="!runs.length" class="empty-state">暂无执行记录。生成草稿后可以在这里查看过程。</p>
+    <article v-for="run in runs" :key="run.id" class="run-item">
       <strong>{{labels[run.status] || run.status}}</strong><p>原始需求：{{run.instruction}}</p>
       <template v-if="run.draft"><h4>{{run.draft.title}}</h4><p>{{run.draft.description}}</p></template>
       <p v-if="run.error">{{run.error}}</p>
-      <div v-if="run.status==='pending'"><button :disabled="busy" @click="decide(run.id,'confirm')">确认创建待办</button><button :disabled="busy" @click="decide(run.id,'reject')">拒绝草稿</button></div>
+      <div v-if="run.status==='pending'" class="task-actions"><button :disabled="busy" @click="decide(run.id,'confirm')">确认创建待办</button><button class="quiet-button" :disabled="busy" @click="decide(run.id,'reject')">拒绝草稿</button></div>
       <details><summary>查看执行过程</summary><ol><li v-for="(event,index) in run.events" :key="index">{{labels[event.action] || event.action}} · {{new Date(event.created_at).toLocaleString('zh-CN')}}</li></ol></details>
-    </article>
+    </article></div></div>
   </section>
 </template>
 <style scoped>
-.task-panel{border-top:1px solid #dbe2d8;padding-top:20px;margin:30px 0;font-size:13px}label{display:block}textarea{display:block;width:100%;padding:12px;margin:10px 0;border:1px solid #bac9bf;border-radius:6px;font:inherit}button{margin:0 10px 8px 0}article{padding:16px;background:white;border:1px solid #dbe2d8;border-radius:8px;margin:12px 0}p{white-space:pre-wrap;overflow-wrap:anywhere}h4{margin-bottom:8px}details{margin-top:12px;color:#456553}
+.task-panel{margin:48px 0 0}.task-intro{color:var(--muted);font-size:13px;margin:0 0 17px}.task-form{padding:22px;border:1px solid var(--line);border-radius:12px;background:#fff}.task-form label{display:block;font-size:12px;font-weight:700}.task-form textarea{display:block;width:100%;padding:11px 12px;margin:8px 0 13px;border:1px solid var(--line);border-radius:7px;resize:vertical;font-size:13px;line-height:1.7}.task-actions{display:flex;gap:9px;flex-wrap:wrap}.task-message{font-size:12px;color:var(--deep);margin:12px 0}.task-columns{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:30px}.task-columns h3{font-size:16px;margin:0 0 13px}.task-columns h3 small{font-weight:400;color:var(--muted);margin-left:7px;font-size:11px}.empty-state{color:var(--muted);font-size:12px;padding:18px 0;border-top:1px solid var(--line)}article{padding:16px;background:#fff;border:1px solid var(--line);border-radius:8px;margin:0 0 10px;font-size:13px}article strong{color:var(--ink)}article p{white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0;color:#405b58;line-height:1.75}.run-item{border-left:3px solid var(--deep)}h4{margin:12px 0 5px;font-size:13px}details{margin-top:14px;color:var(--deep);border-top:1px solid var(--line);padding-top:10px;font-size:12px}summary{cursor:pointer}ol{padding-left:20px}li{margin:5px 0}@media(max-width:800px){.task-columns{grid-template-columns:1fr;gap:18px}}@media(max-width:520px){.task-form{padding:17px}}
 </style>

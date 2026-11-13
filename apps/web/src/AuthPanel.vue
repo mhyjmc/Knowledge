@@ -5,6 +5,7 @@ import KnowledgePanel from './KnowledgePanel.vue';
 import TaskPanel from './TaskPanel.vue';
 
 type User = { id: string; name: string; email: string };
+const emit = defineEmits<{(event:'auth-change', loggedIn:boolean):void}>();
 const user = ref<User | null>(null);
 const mode = ref<'login' | 'register'>('login');
 const name = ref('');
@@ -37,6 +38,7 @@ async function initialise() {
   }
   try { user.value = (await request('/api/auth/me')).user; } catch { user.value = null; }
   initialising.value = false;
+  emit('auth-change',Boolean(user.value));
 }
 
 function switchMode(next: 'login' | 'register') {
@@ -57,6 +59,7 @@ async function submit() {
       message.value = '注册成功，请使用刚才的邮箱和密码登录。';
     } else {
       user.value = result.user;
+      emit('auth-change',true);
       message.value = '登录成功。';
     }
     password.value = '';
@@ -71,6 +74,7 @@ async function logout() {
   try {
     await request('/api/auth/logout', {});
     user.value = null;
+    emit('auth-change',false);
     message.value = '已退出登录。';
     failed.value = false;
   } catch (error) {
@@ -83,7 +87,7 @@ onMounted(initialise);
 </script>
 
 <template>
-  <section class="account-section">
+  <section id="account" class="account-section">
     <div class="section-title"><h2>团队账号</h2><span>{{ database }}</span></div>
     <p v-if="initialising" role="status">正在读取登录状态…</p>
     <div v-else-if="user" class="account-content">
@@ -104,11 +108,13 @@ onMounted(initialise);
     </form>
     <p v-if="message" :class="['account-message', { failed }]" role="status">{{ message }}</p>
   </section>
-  <ChatPanel v-if="user" :key="user.id" :user-id="user.id" />
-  <KnowledgePanel v-if="user" :key="'knowledge-'+user.id" />
-  <TaskPanel v-if="user" :key="'tasks-'+user.id" />
+  <template v-if="user">
+    <div id="documents" class="tool-section"><KnowledgePanel :key="'knowledge-'+user.id" /></div>
+    <div id="chat" class="tool-section"><ChatPanel :key="user.id" :user-id="user.id" /></div>
+    <div id="tasks" class="tool-section"><TaskPanel :key="'tasks-'+user.id" /></div>
+  </template>
 </template>
 
 <style scoped>
-.account-section{margin:32px 0;padding:20px 0;border-top:1px solid #dbe2d8;border-bottom:1px solid #dbe2d8}.section-title{flex-wrap:wrap}.account-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px;margin:20px 0}label{display:flex;flex-direction:column;gap:7px;font-size:13px}input{font:inherit;padding:11px 12px;border:1px solid #bac9bf;border-radius:6px;min-width:0;background:white}input:focus{outline:2px solid #608967;outline-offset:1px}.mode-tabs{display:flex;gap:2px;border-bottom:1px solid #dbe2d8}.mode-tabs button{background:transparent;color:#66776c;border-radius:0;padding:10px 22px;border-bottom:2px solid transparent}.mode-tabs button.selected{color:#214e3c;border-bottom-color:#214e3c}.account-content{display:flex;justify-content:space-between;align-items:center;gap:16px}.account-content h3{margin:0;font-size:18px}.account-content p{font-size:13px;color:#6b7b71}.account-message{font-size:13px;color:#3e704c}.failed{color:#ad3434}@media(max-width:640px){.account-fields{grid-template-columns:1fr}.account-content{flex-wrap:wrap}}
+.account-section{scroll-margin-top:28px;margin:38px 0 0;padding:25px 27px;background:#fff;border:1px solid var(--line);border-radius:12px}.section-title{flex-wrap:wrap}.section-title h2{font-size:19px}.account-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin:20px 0}label{display:flex;flex-direction:column;gap:7px;font-size:12px;font-weight:600}input{padding:10px 12px;border:1px solid var(--line);border-radius:7px;min-width:0;background:white;font-size:13px}.mode-tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}.mode-tabs button{background:transparent;color:var(--muted);border-radius:0;padding:9px 20px;border-bottom:2px solid transparent}.mode-tabs button:hover:not(:disabled){background:#eef5f1;color:var(--deep)}.mode-tabs button.selected{color:var(--deep);border-bottom-color:var(--deep)}.account-content{display:flex;justify-content:space-between;align-items:center;gap:16px}.account-content h3{margin:0;font-size:17px}.account-content p{font-size:13px;color:var(--muted);overflow-wrap:anywhere}.account-content button{background:transparent;color:var(--deep);border:1px solid var(--line)}.account-content button:hover:not(:disabled){background:#e8f1ee;color:var(--deep)}.account-message{font-size:12px;color:var(--deep);margin-bottom:0}.account-message.failed{color:var(--danger)}@media(max-width:700px){.account-section{scroll-margin-top:115px;padding:19px}.account-fields{grid-template-columns:1fr}.account-content{flex-wrap:wrap}}
 </style>

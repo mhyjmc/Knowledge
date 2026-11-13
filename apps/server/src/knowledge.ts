@@ -18,6 +18,11 @@ export function terms(query: string) {
 }
 
 export type Source = { id:string; document_id:string; title:string; position:number; content:string; score:number };
+function splitContent(content:string) {
+  const chunks:string[]=[];
+  for(let index=0;index<content.length;index+=700) chunks.push(content.slice(index,index+800));
+  return chunks;
+}
 export function expandedTerms(query: string) {
   const original = terms(query);
   const additions = synonymGroups.filter(group => group.some(phrase => query.includes(phrase)))
@@ -43,6 +48,43 @@ export function registerKnowledge(app: FastifyInstance, pool?: pg.Pool) {
     reply.header('Cache-Control','no-store');
     return {documents:(await pool.query('SELECT d.id,d.title,d.created_at,count(c.id)::integer AS chunks FROM documents d LEFT JOIN document_chunks c ON c.document_id=d.id WHERE d.user_id=$1 GROUP BY d.id ORDER BY d.created_at DESC',[user.id])).rows};
   });
+  app.get<{Params:{id:string}}>('/api/documents/:id',{
+    schema:{params:{type:'object',required:['id'],properties:{id:{type:'string',format:'uuid'}}}},
+  },async(request,reply)=>{
+    if(!pool)return reply.code(503).send({message:'数据库未配置。'});
+    const user=await authenticatedUser(request,pool);
+    if(!user)return reply.code(401).send({message:'请先登录。'});
+    const result=await pool.query<{id:string;title:string;content:string;position:number}>(
+      'SELECT d.id,d.title,c.position,c.content FROM documents d JOIN document_chunks c ON c.document_id=d.id WHERE d.id=$1 AND d.user_id=$2 ORDER BY c.position',
+      [request.params.id,user.id]);
+    if(!result.rowCount)return reply.code(404).send({message:'文档不存在或无权查看。'});
+    reply.header('Cache-Control','no-store');
+    return {document:{id:request.params.id,title:result.rows[0]!.title,content:result.rows.map((row,index)=>index?row.content.slice(100):row.content).join(''),chunks:result.rows.length}};
+  });
+  app.put<{Params:{id:string};Body:{title:string;content:string}}>('/api/documents/:id',{
+    bodyLimit:512000,
+    schema:{
+      params:{type:'object',required:['id'],properties:{id:{type:'string',format:'uuid'}}},
+      body:{type:'object',required:['title','content'],additionalProperties:false,properties:{title:{type:'string',minLength:1,maxLength:120,pattern:'\\S'},content:{type:'string',minLength:1,maxLength:200000,pattern:'\\S'}}},
+    },
+    config:{rateLimit:{max:10,timeWindow:'1 minute'}},
+  },async(request,reply)=>{
+    if(!pool)return reply.code(503).send({message:'数据库未配置。'});
+    const user=await authenticatedUser(request,pool);
+    if(!user)return reply.code(401).send({message:'请先登录。'});
+    const title=request.body.title.trim(),content=request.body.content.replace(/\r\n/g,'\n').trim();
+    const chunks=splitContent(content),client=await pool.connect();
+    try{
+      await client.query('BEGIN');
+      const found=await client.query('SELECT id FROM documents WHERE id=$1 AND user_id=$2 FOR UPDATE',[request.params.id,user.id]);
+      if(!found.rowCount){await client.query('ROLLBACK');return reply.code(404).send({message:'文档不存在或无权修改。'});}
+      await client.query('UPDATE documents SET title=$1 WHERE id=$2',[title,request.params.id]);
+      await client.query('DELETE FROM document_chunks WHERE document_id=$1',[request.params.id]);
+      for(let index=0;index<chunks.length;index++)await client.query('INSERT INTO document_chunks(id,document_id,position,content) VALUES ($1,$2,$3,$4)',[randomUUID(),request.params.id,index+1,chunks[index]]);
+      await client.query('COMMIT');
+      return {document:{id:request.params.id,title,chunks:chunks.length}};
+    }catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}
+  });
   app.delete<{Params:{id:string}}>('/api/documents/:id',{
     schema:{params:{type:'object',required:['id'],properties:{id:{type:'string',format:'uuid'}}}},
     config:{rateLimit:{max:20,timeWindow:'1 minute'}},
@@ -64,8 +106,7 @@ export function registerKnowledge(app: FastifyInstance, pool?: pg.Pool) {
     if (!user) return reply.code(401).send({message:'请先登录。'});
     const client = await pool.connect(), id=randomUUID();
     const content=request.body.content.replace(/\r\n/g,'\n').trim();
-    const chunks:string[]=[];
-    for(let index=0;index<content.length;index+=700) chunks.push(content.slice(index,index+800));
+    const chunks=splitContent(content);
     try {
       await client.query('BEGIN');
       await client.query('INSERT INTO documents(id,user_id,title) VALUES ($1,$2,$3)',[id,user.id,request.body.title.trim()]);
