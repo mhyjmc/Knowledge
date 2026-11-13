@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import ChatPanel from './ChatPanel.vue';
-import KnowledgePanel from './KnowledgePanel.vue';
-import TaskPanel from './TaskPanel.vue';
+import { storeToRefs } from 'pinia';
+import { useRoute, useRouter } from 'vue-router';
+import { useSessionStore } from './store/session';
 
-type User = { id: string; name: string; email: string };
-const emit = defineEmits<{(event:'auth-change', loggedIn:boolean):void}>();
-const user = ref<User | null>(null);
+const session = useSessionStore();
+const { user } = storeToRefs(session);
+const route = useRoute();
+const router = useRouter();
 const mode = ref<'login' | 'register'>('login');
 const name = ref('');
 const email = ref('');
@@ -36,9 +37,8 @@ async function initialise() {
   } catch (error) {
     database.value = error instanceof Error ? error.message : '暂时无法连接数据库。';
   }
-  try { user.value = (await request('/api/auth/me')).user; } catch { user.value = null; }
+  await session.restore();
   initialising.value = false;
-  emit('auth-change',Boolean(user.value));
 }
 
 function switchMode(next: 'login' | 'register') {
@@ -58,9 +58,10 @@ async function submit() {
       mode.value = 'login';
       message.value = '注册成功，请使用刚才的邮箱和密码登录。';
     } else {
-      user.value = result.user;
-      emit('auth-change',true);
+      session.setUser(result.user);
       message.value = '登录成功。';
+      const destination = route.query.redirect;
+      await router.replace(typeof destination === 'string' && destination.startsWith('/') && !destination.startsWith('//') ? destination : '/documents');
     }
     password.value = '';
   } catch (error) {
@@ -73,8 +74,8 @@ async function logout() {
   busy.value = true;
   try {
     await request('/api/auth/logout', {});
-    user.value = null;
-    emit('auth-change',false);
+    session.setUser(null);
+    await router.replace('/account');
     message.value = '已退出登录。';
     failed.value = false;
   } catch (error) {
@@ -108,13 +109,8 @@ onMounted(initialise);
     </form>
     <p v-if="message" :class="['account-message', { failed }]" role="status">{{ message }}</p>
   </section>
-  <template v-if="user">
-    <div id="documents" class="tool-section"><KnowledgePanel :key="'knowledge-'+user.id" /></div>
-    <div id="chat" class="tool-section"><ChatPanel :key="user.id" :user-id="user.id" /></div>
-    <div id="tasks" class="tool-section"><TaskPanel :key="'tasks-'+user.id" /></div>
-  </template>
 </template>
 
 <style scoped>
-.account-section{scroll-margin-top:28px;margin:38px 0 0;padding:25px 27px;background:#fff;border:1px solid var(--line);border-radius:12px}.section-title{flex-wrap:wrap}.section-title h2{font-size:19px}.account-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin:20px 0}label{display:flex;flex-direction:column;gap:7px;font-size:12px;font-weight:600}input{padding:10px 12px;border:1px solid var(--line);border-radius:7px;min-width:0;background:white;font-size:13px}.mode-tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}.mode-tabs button{background:transparent;color:var(--muted);border-radius:0;padding:9px 20px;border-bottom:2px solid transparent}.mode-tabs button:hover:not(:disabled){background:#eef5f1;color:var(--deep)}.mode-tabs button.selected{color:var(--deep);border-bottom-color:var(--deep)}.account-content{display:flex;justify-content:space-between;align-items:center;gap:16px}.account-content h3{margin:0;font-size:17px}.account-content p{font-size:13px;color:var(--muted);overflow-wrap:anywhere}.account-content button{background:transparent;color:var(--deep);border:1px solid var(--line)}.account-content button:hover:not(:disabled){background:#e8f1ee;color:var(--deep)}.account-message{font-size:12px;color:var(--deep);margin-bottom:0}.account-message.failed{color:var(--danger)}@media(max-width:700px){.account-section{scroll-margin-top:115px;padding:19px}.account-fields{grid-template-columns:1fr}.account-content{flex-wrap:wrap}}
+.account-section{scroll-margin-top:28px;margin:38px 0 0;padding:25px 27px;background:#fff;border:1px solid var(--line);border-radius:12px}.section-title{flex-wrap:wrap}.section-title h2{font-size:19px}.account-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin:20px 0}label{display:flex;flex-direction:column;gap:7px;font-size:12px;font-weight:600}input{padding:10px 12px;border:1px solid var(--line);border-radius:7px;min-width:0;background:white;font-size:13px}.mode-tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}.mode-tabs button{background:transparent;color:var(--muted);border-radius:0;padding:9px 20px;border-bottom:2px solid transparent}.mode-tabs button:hover:not(:disabled){background:#f0f7fd;color:var(--deep)}.mode-tabs button.selected{color:var(--deep);border-bottom-color:var(--deep)}.account-content{display:flex;justify-content:space-between;align-items:center;gap:16px}.account-content h3{margin:0;font-size:17px}.account-content p{font-size:13px;color:var(--muted);overflow-wrap:anywhere}.account-content button{background:transparent;color:var(--deep);border:1px solid var(--line)}.account-content button:hover:not(:disabled){background:#e9f3fc;color:var(--deep)}.account-message{font-size:12px;color:var(--deep);margin-bottom:0}.account-message.failed{color:var(--danger)}@media(max-width:700px){.account-section{scroll-margin-top:115px;padding:19px}.account-fields{grid-template-columns:1fr}.account-content{flex-wrap:wrap}}
 </style>

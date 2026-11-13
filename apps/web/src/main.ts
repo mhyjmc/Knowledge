@@ -1,5 +1,9 @@
 import { createApp } from 'vue';
+import { createPinia } from 'pinia';
 import App from './App.vue';
+import { createWorkspaceRouter } from './router';
 import './style.css';
 
-createApp(App).mount('#app');
+const app = createApp(App);
+const pinia = createPinia();
+app.use(pinia).use(createWorkspaceRouter(pinia)).mount('#app');
