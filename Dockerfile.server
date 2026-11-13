@@ -1,0 +1,17 @@
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY package*.json ./
+COPY apps/server/package*.json apps/server/
+RUN npm ci
+COPY apps/server apps/server
+RUN npm run build -w @team-kb/server
+
+FROM node:20-alpine
+WORKDIR /app
+ENV NODE_ENV=production
+COPY package*.json ./
+COPY apps/server/package*.json apps/server/
+RUN npm ci --omit=dev
+COPY --from=build /app/apps/server/dist apps/server/dist
+EXPOSE 3001
+CMD ["node", "apps/server/dist/index.js"]

@@ -1,0 +1,298 @@
+{
+  "datasetVersion": "1.0",
+  "mode": "真实模型",
+  "startedAt": "2026-10-09T07:32:17.911Z",
+  "endedAt": "2026-10-09T07:32:38.641Z",
+  "config": {
+    "model": "gpt-6.1-sol",
+    "apiMode": "responses",
+    "effort": "low",
+    "maxOutput": 1024
+  },
+  "modelCalls": 3,
+  "passed": 10,
+  "total": 11,
+  "fatal": false,
+  "results": [
+    {
+      "id": "materials",
+      "phase": "检索",
+      "question": "报销材料有哪些？请用一句话回答并引用。",
+      "expectedTitle": "评测报销制度",
+      "passed": true,
+      "top1Correct": true,
+      "sources": [
+        {
+          "id": "99cd5e1d-c3a9-4e1d-ab3a-22fa84f355fe",
+          "document_id": "eab074b1-3d07-4363-98b9-f6ea45079021",
+          "title": "评测报销制度",
+          "position": 1,
+          "content": "报销材料必须包括发票和审批记录。报销申请必须在消费后七天内提交。本文未规定报销额度。",
+          "score": 3
+        }
+      ]
+    },
+    {
+      "id": "deadline",
+      "phase": "检索",
+      "question": "报销申请必须在消费后多久提交？请用一句话回答并引用。",
+      "expectedTitle": "评测报销制度",
+      "passed": true,
+      "top1Correct": true,
+      "sources": [
+        {
+          "id": "99cd5e1d-c3a9-4e1d-ab3a-22fa84f355fe",
+          "document_id": "eab074b1-3d07-4363-98b9-f6ea45079021",
+          "title": "评测报销制度",
+          "position": 1,
+          "content": "报销材料必须包括发票和审批记录。报销申请必须在消费后七天内提交。本文未规定报销额度。",
+          "score": 10
+        },
+        {
+          "id": "94fa1292-7c74-4bd7-828f-5839ba87ab81",
+          "document_id": "38443ee3-760c-481c-a938-55b38050e797",
+          "title": "评测请假流程",
+          "position": 1,
+          "content": "请假申请需要先提交给直属主管审批，审批通过后由人事登记。",
+          "score": 2
+        }
+      ]
+    },
+    {
+      "id": "missing-fact",
+      "phase": "检索",
+      "question": "报销额度最高多少钱？请简短回答。",
+      "expectedTitle": "评测报销制度",
+      "passed": true,
+      "top1Correct": true,
+      "sources": [
+        {
+          "id": "99cd5e1d-c3a9-4e1d-ab3a-22fa84f355fe",
+          "document_id": "eab074b1-3d07-4363-98b9-f6ea45079021",
+          "title": "评测报销制度",
+          "position": 1,
+          "content": "报销材料必须包括发票和审批记录。报销申请必须在消费后七天内提交。本文未规定报销额度。",
+          "score": 3
+        }
+      ]
+    },
+    {
+      "id": "no-match",
+      "phase": "检索",
+      "question": "火星飞船燃料配方",
+      "expectedTitle": null,
+      "passed": true,
+      "top1Correct": true,
+      "sources": []
+    },
+    {
+      "id": "leave",
+      "phase": "检索",
+      "question": "请假申请由谁审批？",
+      "expectedTitle": "评测请假流程",
+      "passed": true,
+      "top1Correct": true,
+      "sources": [
+        {
+          "id": "94fa1292-7c74-4bd7-828f-5839ba87ab81",
+          "document_id": "38443ee3-760c-481c-a938-55b38050e797",
+          "title": "评测请假流程",
+          "position": 1,
+          "content": "请假申请需要先提交给直属主管审批，审批通过后由人事登记。",
+          "score": 4
+        },
+        {
+          "id": "99cd5e1d-c3a9-4e1d-ab3a-22fa84f355fe",
+          "document_id": "eab074b1-3d07-4363-98b9-f6ea45079021",
+          "title": "评测报销制度",
+          "position": 1,
+          "content": "报销材料必须包括发票和审批记录。报销申请必须在消费后七天内提交。本文未规定报销额度。",
+          "score": 2
+        }
+      ]
+    },
+    {
+      "id": "paraphrase",
+      "phase": "检索",
+      "question": "买东西之后要在几日以内递交凭证？",
+      "expectedTitle": "评测报销制度",
+      "passed": false,
+      "top1Correct": false,
+      "sources": []
+    },
+    {
+      "id": "isolation",
+      "phase": "权限",
+      "passed": true,
+      "sources": [],
+      "readStatus": 404,
+      "writeStatus": 404
+    },
+    {
+      "id": "materials",
+      "phase": "问答自动初筛",
+      "question": "报销材料有哪些？请用一句话回答并引用。",
+      "passed": true,
+      "checks": {
+        "completed": true,
+        "expectedKeywords": true,
+        "refusal": true,
+        "citations": true,
+        "sourceSnapshot": true,
+        "noEvidenceNoModel": true
+      },
+      "answer": " 报销材料必须包括发票和审批记录。[1]",
+      "sources": [
+        {
+          "id": "99cd5e1d-c3a9-4e1d-ab3a-22fa84f355fe",
+          "score": 3,
+          "title": "评测报销制度",
+          "content": "报销材料必须包括发票和审批记录。报销申请必须在消费后七天内提交。本文未规定报销额度。",
+          "position": 1,
+          "document_id": "eab074b1-3d07-4363-98b9-f6ea45079021"
+        }
+      ],
+      "citations": [
+        1
+      ],
+      "status": "completed",
+      "durationMs": 6282,
+      "usage": {
+        "input_tokens": 134,
+        "total_tokens": 151,
+        "output_tokens": 17,
+        "input_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0
+        },
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "modelCalls": 1,
+      "httpStatus": 200,
+      "humanReview": "待人工确认：事实是否有依据、是否正确拒答、引用是否支持每项结论。"
+    },
+    {
+      "id": "deadline",
+      "phase": "问答自动初筛",
+      "question": "报销申请必须在消费后多久提交？请用一句话回答并引用。",
+      "passed": true,
+      "checks": {
+        "completed": true,
+        "expectedKeywords": true,
+        "refusal": true,
+        "citations": true,
+        "sourceSnapshot": true,
+        "noEvidenceNoModel": true
+      },
+      "answer": " 报销申请必须在消费后七天内提交。[1]",
+      "sources": [
+        {
+          "id": "99cd5e1d-c3a9-4e1d-ab3a-22fa84f355fe",
+          "score": 10,
+          "title": "评测报销制度",
+          "content": "报销材料必须包括发票和审批记录。报销申请必须在消费后七天内提交。本文未规定报销额度。",
+          "position": 1,
+          "document_id": "eab074b1-3d07-4363-98b9-f6ea45079021"
+        },
+        {
+          "id": "94fa1292-7c74-4bd7-828f-5839ba87ab81",
+          "score": 2,
+          "title": "评测请假流程",
+          "content": "请假申请需要先提交给直属主管审批，审批通过后由人事登记。",
+          "position": 1,
+          "document_id": "38443ee3-760c-481c-a938-55b38050e797"
+        }
+      ],
+      "citations": [
+        1
+      ],
+      "status": "completed",
+      "durationMs": 7349,
+      "usage": {
+        "input_tokens": 173,
+        "total_tokens": 191,
+        "output_tokens": 18,
+        "input_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0
+        },
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "modelCalls": 1,
+      "httpStatus": 200,
+      "humanReview": "待人工确认：事实是否有依据、是否正确拒答、引用是否支持每项结论。"
+    },
+    {
+      "id": "missing-fact",
+      "phase": "问答自动初筛",
+      "question": "报销额度最高多少钱？请简短回答。",
+      "passed": true,
+      "checks": {
+        "completed": true,
+        "expectedKeywords": true,
+        "refusal": true,
+        "citations": true,
+        "sourceSnapshot": true,
+        "noEvidenceNoModel": true
+      },
+      "answer": " 资料不足，制度未规定报销额度上限。[1]",
+      "sources": [
+        {
+          "id": "99cd5e1d-c3a9-4e1d-ab3a-22fa84f355fe",
+          "score": 3,
+          "title": "评测报销制度",
+          "content": "报销材料必须包括发票和审批记录。报销申请必须在消费后七天内提交。本文未规定报销额度。",
+          "position": 1,
+          "document_id": "eab074b1-3d07-4363-98b9-f6ea45079021"
+        }
+      ],
+      "citations": [
+        1
+      ],
+      "status": "completed",
+      "durationMs": 6560,
+      "usage": {
+        "input_tokens": 132,
+        "total_tokens": 150,
+        "output_tokens": 18,
+        "input_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0
+        },
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "modelCalls": 1,
+      "httpStatus": 200,
+      "humanReview": "待人工确认：事实是否有依据、是否正确拒答、引用是否支持每项结论。"
+    },
+    {
+      "id": "no-match",
+      "phase": "问答自动初筛",
+      "question": "火星飞船燃料配方",
+      "passed": true,
+      "checks": {
+        "completed": true,
+        "expectedKeywords": true,
+        "refusal": true,
+        "citations": true,
+        "sourceSnapshot": true,
+        "noEvidenceNoModel": true
+      },
+      "answer": "资料不足：你的文档中没有找到相关片段，请补充资料或换用更具体的关键词。",
+      "sources": [],
+      "citations": [],
+      "status": "completed",
+      "durationMs": 5,
+      "usage": null,
+      "modelCalls": 0,
+      "httpStatus": 200,
+      "humanReview": "待人工确认：事实是否有依据、是否正确拒答、引用是否支持每项结论。"
+    }
+  ]
+}

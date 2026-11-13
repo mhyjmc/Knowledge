@@ -1,0 +1,11 @@
+.git
+node_modules
+**/dist
+.env
+.env.*
+deploy/.env.production
+.local-postgres
+.browser-acceptance
+docs
+coverage
+*.log

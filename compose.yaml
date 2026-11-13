@@ -1,0 +1,19 @@
+name: team-knowledge-assistant
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: team_knowledge
+      POSTGRES_USER: team_kb
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?请先运行 npm run db:setup}
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - team_kb_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U team_kb -d team_knowledge"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+volumes:
+  team_kb_data:

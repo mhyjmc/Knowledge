@@ -1,0 +1,47 @@
+name: team-knowledge-assistant-production
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: team_knowledge
+      POSTGRES_USER: team_kb
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?请先配置 POSTGRES_PASSWORD}
+    volumes:
+      - team_kb_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U team_kb -d team_knowledge"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://team_kb:${POSTGRES_PASSWORD}@postgres:5432/team_knowledge
+      HOST: 0.0.0.0
+      PORT: 3001
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      APP_ORIGINS: ${APP_ORIGINS:-http://localhost}
+      LLM_BASE_URL: ${LLM_BASE_URL}
+      LLM_MODEL: ${LLM_MODEL}
+      LLM_API_KEY: ${LLM_API_KEY}
+      LLM_API_MODE: ${LLM_API_MODE:-responses}
+      LLM_REASONING_EFFORT: ${LLM_REASONING_EFFORT:-low}
+      LLM_MAX_OUTPUT_TOKENS: ${LLM_MAX_OUTPUT_TOKENS:-1024}
+    depends_on:
+      postgres:
+        condition: service_healthy
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      - server
+volumes:
+  team_kb_prod_data:
