@@ -110,6 +110,10 @@ export async function migrate(pool: pg.Pool) {
       CREATE INDEX task_events_run_idx ON task_events(run_id,sequence);
       INSERT INTO schema_migrations(version) VALUES ('005_tasks');`);
     }
+    const taskStatusVersion=await client.query('SELECT version FROM schema_migrations WHERE version=$1',['006_task_status']);
+    if(!taskStatusVersion.rowCount){
+      await client.query("ALTER TABLE tasks ADD COLUMN completed boolean NOT NULL DEFAULT false; INSERT INTO schema_migrations(version) VALUES ('006_task_status');");
+    }
     await client.query('COMMIT');
   } catch (error) {
     await client.query('ROLLBACK');

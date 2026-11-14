@@ -34,7 +34,23 @@ export function registerTasks(app: FastifyInstance, pool?: pg.Pool, runner: Mode
     const user = await authenticatedUser(request, pool);
     if (!user) return reply.code(401).send({ message: '请先登录。' });
     reply.header('Cache-Control', 'no-store');
-    return { tasks: (await pool.query('SELECT id,run_id,title,description,created_at FROM tasks WHERE user_id=$1 ORDER BY created_at DESC LIMIT 50', [user.id])).rows };
+    return { tasks: (await pool.query('SELECT id,run_id,title,description,completed,created_at FROM tasks WHERE user_id=$1 ORDER BY completed ASC,created_at DESC LIMIT 50', [user.id])).rows };
+  });
+  app.patch<{ Params: { id:string }; Body: { completed:boolean } }>('/api/tasks/:id', {
+    schema: {
+      params: { type:'object', required:['id'], properties:{ id:{ type:'string', format:'uuid' } } },
+      body: { type:'object', additionalProperties:false, required:['completed'], properties:{ completed:{ type:'boolean' } } },
+    },
+  }, async (request, reply) => {
+    if (!pool) return reply.code(503).send({ message:'数据库未配置。' });
+    const user = await authenticatedUser(request, pool);
+    if (!user) return reply.code(401).send({ message:'请先登录。' });
+    const result = await pool.query(
+      'UPDATE tasks SET completed=$1 WHERE id=$2 AND user_id=$3 RETURNING id,run_id,title,description,completed,created_at',
+      [request.body.completed, request.params.id, user.id],
+    );
+    if (!result.rowCount) return reply.code(404).send({ message:'待办不存在或无权修改。' });
+    return { task: result.rows[0] };
   });
   app.post<{ Body: { instruction: string; requestId: string } }>('/api/task-runs', {
     schema: { body: { type: 'object', additionalProperties: false, required: ['instruction','requestId'], properties: {

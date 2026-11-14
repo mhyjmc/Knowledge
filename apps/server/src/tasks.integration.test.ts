@@ -30,7 +30,12 @@ test('待办草稿确认、拒绝、失败、幂等、原子执行及跨用户�
     assert.deepEqual((await app.inject({method:'GET',url:'/api/task-runs',headers:{cookie:other}})).json().runs,[]);
     const confirm=()=>app.inject({method:'POST',url:`/api/task-runs/${id}/decision`,headers:{...headers,cookie},payload:{action:'confirm'}});
     const [first,second]=await Promise.all([confirm(),confirm()]);assert.equal(first.statusCode,200);assert.equal(second.statusCode,200);assert.equal(first.json().task.id,second.json().task.id);
-    const list=(await app.inject({method:'GET',url:'/api/tasks',headers:{cookie}})).json().tasks;assert.equal(list.length,1);assert.equal(list[0].title,'整理报销材料');
+    const list=(await app.inject({method:'GET',url:'/api/tasks',headers:{cookie}})).json().tasks;assert.equal(list.length,1);assert.equal(list[0].title,'整理报销材料');assert.equal(list[0].completed,false);
+    const taskId=list[0].id;
+    const completed=await app.inject({method:'PATCH',url:'/api/tasks/'+taskId,headers:{...headers,cookie},payload:{completed:true}});assert.equal(completed.statusCode,200);assert.equal(completed.json().task.completed,true);
+    const replayed=await app.inject({method:'PATCH',url:'/api/tasks/'+taskId,headers:{...headers,cookie},payload:{completed:true}});assert.equal(replayed.json().task.completed,true);
+    assert.equal((await app.inject({method:'PATCH',url:'/api/tasks/'+taskId,headers:{...headers,cookie:other},payload:{completed:false}})).statusCode,404);
+    const restored=await app.inject({method:'PATCH',url:'/api/tasks/'+taskId,headers:{...headers,cookie},payload:{completed:false}});assert.equal(restored.json().task.completed,false);
     assert.deepEqual((await app.inject({method:'GET',url:'/api/tasks',headers:{cookie:other}})).json().tasks,[]);
     assert.equal((await app.inject({method:'POST',url:`/api/task-runs/${id}/decision`,headers:{...headers,cookie},payload:{action:'reject'}})).statusCode,409);
     const history=(await app.inject({method:'GET',url:'/api/task-runs',headers:{cookie}})).json().runs[0];assert.deepEqual(history.events.map((e:{action:string})=>e.action),['proposing','pending','executed']);
